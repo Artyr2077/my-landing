@@ -16,9 +16,10 @@ export async function POST(request: Request) {
       const res = NextResponse.json({ success: true });
       res.cookies.set("admin-auth", "true", {
         httpOnly: true,
-        secure: true,
+        secure: process.env.NODE_ENV === 'production',
         maxAge: 60 * 60 * 24, // 24 часа в секундах
-        path: "/"
+        path: "/",
+        sameSite: 'strict'
       });
       return res;
     } else {
