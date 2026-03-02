@@ -1,6 +1,39 @@
 import { supabase } from '@/lib/supabaseClient';
 import { NextResponse } from 'next/server';
+import { validateContactForm } from '@/lib/validation';
 
+/**
+ * Обрабатывает отправку контактной формы
+ * Сохраняет данные в таблицу leads в Supabase
+ * 
+ * @param request - HTTP запрос с данными формы (name, email, message)
+ * @returns JSON ответ с результатом операции
+ * 
+ * @example
+ * POST /api/contact
+ * Body: {
+ *   "name": "Иван Петров",
+ *   "email": "ivan@example.com", 
+ *   "message": "Хочу заказать сайт"
+ * }
+ * 
+ * Успешный ответ:
+ * {
+ *   "success": true,
+ *   "message": "Спасибо! Мы свяжемся с вами"
+ * }
+ * 
+ * Ответ с ошибками валидации:
+ * {
+ *   "success": false,
+ *   "errors": [
+ *     { "field": "email", "message": "Неверный формат email" }
+ *   ]
+ * }
+ * 
+ * @throws {400} Ошибка валидации
+ * @throws {500} Ошибка сервера или базы данных
+ */
 export async function POST(request: Request) {
   try {
     // Получаем данные из тела запроса
@@ -9,36 +42,17 @@ export async function POST(request: Request) {
 
     console.log('Получены данные:', { name, email, message }); // для отладки
 
-    // Валидация
-    const errors = [];
-
-    if (!name || name.trim() === '') {
-      errors.push({ field: 'name', message: 'Имя обязательно' });
-    }
-
-    if (!email || email.trim() === '') {
-      errors.push({ field: 'email', message: 'Email обязателен' });
-    } else {
-      // Простая проверка email
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        errors.push({ field: 'email', message: 'Неверный формат email' });
-      }
-    }
-
-    if (!message || message.trim() === '') {
-      errors.push({ field: 'message', message: 'Сообщение обязательно' });
-    }
-
-    // Если есть ошибки, возвращаем их
-    if (errors.length > 0) {
+    // Валидация с использованием библиотеки
+    const validationErrors = validateContactForm({ name, email, message });
+    
+    if (validationErrors.length > 0) {
       return NextResponse.json(
-        { success: false, errors },
+        { success: false, errors: validationErrors },
         { status: 400 }
       );
     }
 
-    // Сохраняем в Supabase - правильный синтаксис!
+    // Сохраняем в Supabase
     const { data, error } = await supabase
       .from('leads')
       .insert([
