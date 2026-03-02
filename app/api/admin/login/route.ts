@@ -1,5 +1,19 @@
 import { NextResponse } from "next/server";
 
+/**
+ * Аутентификация администратора
+ * 
+ * @param request - HTTP запрос с паролем в теле
+ * @returns JSON ответ и устанавливает cookie при успешном входе
+ * 
+ * @example
+ * POST /api/admin/login
+ * Body: { "password": "admin123" }
+ * 
+ * @throws {400} Пароль не указан
+ * @throws {401} Неверный пароль
+ * @throws {500} Ошибка сервера
+ */
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -17,7 +31,7 @@ export async function POST(request: Request) {
       res.cookies.set("admin-auth", "true", {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 60 * 60 * 24, // 24 часа в секундах
+        maxAge: 60 * 60 * 24, // 24 часа
         path: "/",
         sameSite: 'strict'
       });
