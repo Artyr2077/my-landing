@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import { validateContactForm, ValidationError } from "@/lib/validation";
 
 const initialForm = {
   name: "",
@@ -12,10 +13,6 @@ const initialErrors = {
   message: "",
 };
 
-function validateEmail(email: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
 const Contact = () => {
   const [form, setForm] = useState(initialForm);
   const [errors, setErrors] = useState(initialErrors);
@@ -26,90 +23,82 @@ const Contact = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    // Очищаем ошибку только для текущего поля
     setErrors({ ...errors, [e.target.name]: "" });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    let valid = true;
-    let newErrors = { ...initialErrors };
-
-    if (!form.name.trim()) {
-      newErrors.name = "Пожалуйста, введите имя";
-      valid = false;
+    
+    // Используем функцию валидации из библиотеки
+    const validationErrors = validateContactForm(form);
+    
+    if (validationErrors.length > 0) {
+      // Преобразуем массив ошибок в объект для отображения
+      const newErrors = { ...initialErrors };
+      validationErrors.forEach((err: ValidationError) => {
+        newErrors[err.field as keyof typeof newErrors] = err.message;
+      });
+      setErrors(newErrors);
+      return;
     }
 
-    if (!form.email.trim()) {
-      newErrors.email = "Пожалуйста, введите email";
-      valid = false;
-    } else if (!validateEmail(form.email.trim())) {
-      newErrors.email = "Введите корректный email";
-      valid = false;
-    }
+    // Если валидация прошла успешно
+    setIsLoading(true);
+    setFormStatus(null);
+    
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form)
+      });
 
-    if (!form.message.trim()) {
-      newErrors.message = "Пожалуйста, напишите сообщение";
-      valid = false;
-    }
+      const result = await response.json();
 
-    setErrors(newErrors);
+      if (response.ok && result.success) {
+        setFormStatus("success");
+        setStatusMessage(result.message || "Спасибо! Мы свяжемся с вами");
+        setForm(initialForm);
 
-    if (valid) {
-      setIsLoading(true);
-      setFormStatus(null);
-      try {
-        const response = await fetch('/api/contact', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form)
-        });
-
-        const result = await response.json();
-
-        if (response.ok && result.success) {
-          setFormStatus("success");
-          setStatusMessage(result.message || "Спасибо! Мы свяжемся с вами");
-          setForm(initialForm);
-
-          if (timeoutRef.current) clearTimeout(timeoutRef.current);
-          timeoutRef.current = setTimeout(() => {
-            setFormStatus(null);
-            setStatusMessage("");
-          }, 3000);
-        } else {
-          let message = "";
-          if (result.errors && Array.isArray(result.errors) && result.errors.length > 0) {
-            const fieldsErrors = { ...initialErrors };
-            result.errors.forEach((err: { field: string, message: string }) => {
-              if (err.field && fieldsErrors.hasOwnProperty(err.field)) {
-                fieldsErrors[err.field as keyof typeof fieldsErrors] = err.message;
-              }
-            });
-            setErrors(fieldsErrors);
-            message = result.errors[0].message;
-          } else {
-            message = result.error || "Произошла ошибка отправки. Попробуйте позже.";
-          }
-          setFormStatus("error");
-          setStatusMessage(message);
-
-          if (timeoutRef.current) clearTimeout(timeoutRef.current);
-          timeoutRef.current = setTimeout(() => {
-            setFormStatus(null);
-            setStatusMessage("");
-          }, 3000);
-        }
-      } catch (err) {
-        setFormStatus("error");
-        setStatusMessage("Не удалось отправить форму, попробуйте позже.");
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
         timeoutRef.current = setTimeout(() => {
           setFormStatus(null);
           setStatusMessage("");
         }, 3000);
-      } finally {
-        setIsLoading(false);
+      } else {
+        let message = "";
+        if (result.errors && Array.isArray(result.errors) && result.errors.length > 0) {
+          const fieldsErrors = { ...initialErrors };
+          result.errors.forEach((err: { field: string, message: string }) => {
+            if (err.field && fieldsErrors.hasOwnProperty(err.field)) {
+              fieldsErrors[err.field as keyof typeof fieldsErrors] = err.message;
+            }
+          });
+          setErrors(fieldsErrors);
+          message = result.errors[0].message;
+        } else {
+          message = result.error || "Произошла ошибка отправки. Попробуйте позже.";
+        }
+        setFormStatus("error");
+        setStatusMessage(message);
+
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        timeoutRef.current = setTimeout(() => {
+          setFormStatus(null);
+          setStatusMessage("");
+        }, 3000);
       }
+    } catch (err) {
+      setFormStatus("error");
+      setStatusMessage("Не удалось отправить форму, попробуйте позже.");
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => {
+        setFormStatus(null);
+        setStatusMessage("");
+      }, 3000);
+    } finally {
+      setIsLoading(false);
     }
   };
 
