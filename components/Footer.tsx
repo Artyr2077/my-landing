@@ -32,7 +32,7 @@ const Footer = () => {
             letterSpacing: "-0.2px"
           }}
         >
-          © 2024 WebStudio. Все права защищены
+          © {new Date().getFullYear()} Все права защищены
         </div>
         <div className="footer-socials" style={{ display: "flex", gap: "1.3rem" }}>
           <a
