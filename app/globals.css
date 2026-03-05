@@ -1,33 +1,103 @@
-@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
 
+/* CSS переменные ДО импорта Tailwind */
 :root {
-  --background: #faf9f6;
-  --foreground: #2c2c2c;
-  --accent: #c7a97e;
-  --card: #ffffff;
-  --section: #f5f3f0;
+  /* Светлая тема (по умолчанию) */
+  --background: #ffffff;
+  --foreground: #0B1C33;
+  --primary: #0B1C33;
+  --primary-light: #1E3A6F;
+  --accent: #C6A13B;
+  --accent-light: #E5C76B;
+  --muted: #F5F7FA;
+  --muted-foreground: #5A6B7F;
+  --border: #E0E7EF;
+  --shadow-sm: 0 4px 6px -2px rgba(11, 28, 51, 0.05), 0 2px 4px -2px rgba(11, 28, 51, 0.03);
+  --shadow-md: 0 12px 24px -8px rgba(11, 28, 51, 0.08);
+  --shadow-lg: 0 24px 48px -12px rgba(11, 28, 51, 0.12);
+  
+  /* Toast Colors */
+  --toast-success-bg: #ECFDF3;
+  --toast-success-border: #ABEFC6;
+  --toast-success-text: #067647;
+  --toast-error-bg: #FEF3F2;
+  --toast-error-border: #F9B3AB;
+  --toast-error-text: #B42318;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-accent: var(--accent);
-  --color-card: var(--card);
-  --color-section: var(--section);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Темная тема */
+.dark {
+  --background: #0B1C33;
+  --foreground: #F5F7FA;
+  --primary: #F5F7FA;
+  --primary-light: #FFFFFF;
+  --accent: #E5C76B;
+  --accent-light: #C6A13B;
+  --muted: #1E2A3A;
+  --muted-foreground: #A0B0C0;
+  --border: #2A3A4F;
+  --shadow-sm: 0 4px 6px -2px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 12px 24px -8px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 24px 48px -12px rgba(0, 0, 0, 0.5);
+  
+  --toast-success-bg: #0A2E1F;
+  --toast-success-border: #0A4D2E;
+  --toast-success-text: #A0F0B0;
+  --toast-error-bg: #2E0A0A;
+  --toast-error-border: #4D0A0A;
+  --toast-error-text: #F0A0A0;
 }
 
-/* Убираем авто-смену темы */
-/* @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-} */
+@import "tailwindcss";
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Inter", sans-serif;
+  font-weight: 400;
+  line-height: 1.6;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+h1, h2, h3 {
+  font-family: "Playfair Display", serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.toast {
+  padding: 1rem 1.25rem;
+  border-radius: 1rem;
+  font-weight: 500;
+  font-size: 0.95rem;
+  box-shadow: var(--shadow-md);
+  border: 1px solid transparent;
+  backdrop-filter: blur(4px);
+}
+
+.toast-success {
+  background-color: var(--toast-success-bg);
+  border-color: var(--toast-success-border);
+  color: var(--toast-success-text);
+}
+
+.toast-error {
+  background-color: var(--toast-error-bg);
+  border-color: var(--toast-error-border);
+  color: var(--toast-error-text);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.toast-enter {
+  animation: slideIn 0.2s ease-out forwards;
 }
