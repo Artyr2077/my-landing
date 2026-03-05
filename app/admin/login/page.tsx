@@ -2,12 +2,15 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTheme } from "@/context/ThemeContext";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const LoginPage = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const router = useRouter();
+  const { theme } = useTheme();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,134 +38,48 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="login-root">
-      <div className="login-card">
-        <h2 className="login-title">Вход в админку</h2>
-        <form onSubmit={handleSubmit} className="login-form" autoComplete="off">
-          <label htmlFor="admin-password" className="login-label">
-            Пароль
-          </label>
-          <input
-            id="admin-password"
-            className="login-input"
-            type="password"
-            name="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            disabled={isLoading}
-            autoFocus
-            required
-          />
+    <div className="min-h-screen bg-[var(--background)] flex items-center justify-center p-4">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+      <div className="bg-[var(--background)] border border-[var(--border)] rounded-2xl shadow-[var(--shadow-lg)] max-w-md w-full p-8">
+        <h2 className="text-3xl font-serif font-semibold text-center mb-8 text-[var(--foreground)]">
+          Вход в <span className="text-[var(--accent)]">админку</span>
+        </h2>
+        
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-[var(--foreground)] mb-2">
+              Пароль
+            </label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={isLoading}
+              className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] outline-none transition disabled:opacity-60"
+              placeholder="Введите пароль"
+              autoFocus
+              required
+            />
+          </div>
+
           {errorMsg && (
-            <div className="login-error">{errorMsg}</div>
+            <div className="bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm">
+              {errorMsg}
+            </div>
           )}
+
           <button
             type="submit"
-            className="login-button"
-            disabled={isLoading || password.length === 0}
+            disabled={isLoading || !password}
+            className="w-full bg-[var(--accent)] hover:bg-[var(--accent-light)] text-white font-semibold py-3 px-4 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? "Вход..." : "Войти"}
           </button>
         </form>
       </div>
-      <style>{`
-        .login-root {
-          min-height: 100vh;
-          background: linear-gradient(120deg,#f0f4fe 0%, #c3dbfc 100%);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .login-card {
-          background: #fff;
-          max-width: 400px;
-          width: 100%;
-          padding: 2.2rem 2rem 2.4rem 2rem;
-          border-radius: 1.25rem;
-          box-shadow: 0 2px 32px rgba(46,60,110,0.12);
-          display: flex;
-          flex-direction: column;
-          align-items: stretch;
-        }
-        .login-title {
-          text-align: center;
-          margin-bottom: 2rem;
-          font-size: 2rem;
-          font-weight: 700;
-          color: #3748fa;
-          letter-spacing: -1px;
-        }
-        .login-form {
-          display: flex;
-          flex-direction: column;
-          gap: 1.12rem;
-        }
-        .login-label {
-          font-size: 1.05rem;
-          font-weight: 600;
-          margin-bottom: 0.32rem;
-        }
-        .login-input {
-          padding: 0.9rem 1rem;
-          border-radius: 0.7rem;
-          border: 1.5px solid #dde2eb;
-          background: #f6f8fe;
-          font-size: 1.09rem;
-          outline: none;
-          transition: border-color .19s;
-        }
-        .login-input:focus {
-          border-color: #6278fa;
-          background: #fff;
-        }
-        .login-error {
-          color: #d52e2e;
-          background: #fde8e4;
-          border: 1px solid #f5c3bb;
-          padding: 0.6rem 1rem;
-          border-radius: 0.6rem;
-          font-weight: 500;
-          font-size: 1rem;
-          margin-bottom: 0.2rem;
-          text-align: center;
-          animation: shake 0.28s;
-        }
-        .login-button {
-          margin-top: 0.3rem;
-          padding: 0.8rem 0;
-          font-size: 1.12rem;
-          border: none;
-          border-radius: 0.7rem;
-          font-weight: 600;
-          background: #3748fa;
-          color: #fff;
-          cursor: pointer;
-          box-shadow: 0 1px 10px rgba(70, 90, 120, 0.06);
-          transition: background .21s;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .login-button:disabled {
-          background: #bcd0fa;
-          cursor: not-allowed;
-        }
-        @media (max-width: 600px) {
-          .login-card {
-            max-width: 97vw;
-            padding: 1.2rem 0.9rem 1.6rem 0.9rem;
-          }
-          .login-title {
-            font-size: 1.35rem;
-          }
-        }
-        @keyframes shake {
-          0% { transform: translateX(0); }
-          30% { transform: translateX(-5px); }
-          60% { transform: translateX(5px); }
-          100% { transform: translateX(0); }
-        }
-      `}</style>
     </div>
   );
 };
