@@ -1,125 +1,58 @@
+'use client';
+
 import React from "react";
+import Link from "next/link";
 
 const Footer = () => {
   return (
-    <footer
-      style={{
-        background: "#23243a",
-        color: "#fff",
-        padding: "2rem 0 1.2rem",
-        marginTop: "3rem"
-      }}
-    >
-      <div
-        className="footer-container"
-        style={{
-          maxWidth: 1200,
-          margin: "0 auto",
-          display: "flex",
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "1rem",
-          padding: "0 1rem"
-        }}
-      >
-        <div
-          className="footer-copyright"
-          style={{
-            fontSize: "1.05rem",
-            fontWeight: 500,
-            opacity: 0.85,
-            letterSpacing: "-0.2px"
-          }}
-        >
-          © {new Date().getFullYear()} Все права защищены
+    <footer className="bg-[#0B1C33] text-white py-12">
+      <div className="container max-w-7xl mx-auto px-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+          <div>
+            <h3 className="font-serif text-2xl font-semibold mb-4">
+              Web<span className="text-[#C6A13B]">Studio</span>
+            </h3>
+            <p className="text-white/70 text-sm">
+              Создаем цифровые продукты с душой и вниманием к деталям.
+            </p>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold mb-4 text-white">Навигация</h4>
+            <ul className="space-y-2 text-sm text-white/70">
+              <li><Link href="/" className="hover:text-[#C6A13B] transition-colors">Главная</Link></li>
+              <li><Link href="/#services" className="hover:text-[#C6A13B] transition-colors">Услуги</Link></li>
+              <li><Link href="/#cases" className="hover:text-[#C6A13B] transition-colors">Кейсы</Link></li>
+              <li><Link href="/blog" className="hover:text-[#C6A13B] transition-colors">Блог</Link></li>
+              <li><Link href="/about" className="hover:text-[#C6A13B] transition-colors">О нас</Link></li>
+            </ul>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold mb-4 text-white">Соцсети</h4>
+            <ul className="space-y-2 text-sm text-white/70">
+              <li><a href="#" className="hover:text-[#C6A13B] transition-colors">Twitter</a></li>
+              <li><a href="#" className="hover:text-[#C6A13B] transition-colors">GitHub</a></li>
+              <li><a href="#" className="hover:text-[#C6A13B] transition-colors">LinkedIn</a></li>
+            </ul>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold mb-4 text-white">Контакты</h4>
+            <ul className="space-y-2 text-sm text-white/70">
+              <li>hello@webstudio.com</li>
+              <li>+7 (999) 123-45-67</li>
+              <li>Москва, ул. Тверская, 15</li>
+            </ul>
+          </div>
         </div>
-        <div className="footer-socials" style={{ display: "flex", gap: "1.3rem" }}>
-          <a
-            href="https://twitter.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="footer-social-link"
-            aria-label="Twitter"
-          >
-            <img
-              src="/icons/Twitter.svg"
-              alt="Twitter"
-              width={24}
-              height={24}
-              style={{ display: "block" }}
-            />
-          </a>
-          <a
-            href="https://github.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="footer-social-link"
-            aria-label="GitHub"
-          >
-            <img
-              src="/icons/Github.svg"
-              alt="GitHub"
-              width={24}
-              height={24}
-              style={{ display: "block" }}
-            />
-          </a>
-          <a
-            href="https://www.linkedin.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="footer-social-link"
-            aria-label="LinkedIn"
-          >
-            <img
-              src="/icons/LinkedIn.svg"
-              alt="LinkedIn"
-              width={24}
-              height={24}
-              style={{ display: "block" }}
-            />
-          </a>
+        
+        <div className="pt-8 border-t border-white/20 text-center text-sm text-white/50">
+          © {new Date().getFullYear()} WebStudio. Все права защищены.
         </div>
       </div>
-      <style>
-        {`
-          @media (max-width: 700px) {
-            .footer-container {
-              flex-direction: column;
-              text-align: center;
-              gap: 1rem;
-            }
-            .footer-socials {
-              justify-content: center !important;
-            }
-          }
-          .footer-socials a {
-            opacity: 0.82;
-            transition: opacity .2s, transform .18s;
-            display: flex;
-            align-items: center;
-          }
-          .footer-socials a:hover {
-            opacity: 1 !important;
-            text-decoration: none;
-            transform: translateY(-3px) scale(1.1);
-          }
-          .footer-socials img {
-            width: 24px;
-            height: 24px;
-            display: block;
-            filter: brightness(1) invert(0);
-            transition: filter .18s;
-          }
-          .footer-socials a:hover img {
-            filter: brightness(1.2) invert(0);
-          }
-        `}
-      </style>
     </footer>
   );
 };
-
 
 export default Footer;
