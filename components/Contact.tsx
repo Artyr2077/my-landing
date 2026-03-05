@@ -1,52 +1,42 @@
-import React, { useState, useRef } from "react";
-import { validateContactForm, ValidationError } from "@/lib/validation";
+'use client';
 
-const initialForm = {
-  name: "",
-  email: "",
-  message: "",
-};
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { useInView } from "react-intersection-observer";
+import { useToast } from "./ToastContext";
+import { LoadingIcon } from "./ui/Icons";
+import { validateContactForm } from "@/lib/validation";
 
-const initialErrors = {
-  name: "",
-  email: "",
-  message: "",
-};
+const initialForm = { name: "", email: "", message: "" };
+const initialErrors = { name: "", email: "", message: "" };
 
 const Contact = () => {
   const [form, setForm] = useState(initialForm);
   const [errors, setErrors] = useState(initialErrors);
   const [isLoading, setIsLoading] = useState(false);
-  const [formStatus, setFormStatus] = useState<null | "success" | "error">(null);
-  const [statusMessage, setStatusMessage] = useState<string>("");
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { showToast } = useToast();
+  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
-    // Очищаем ошибку только для текущего поля
     setErrors({ ...errors, [e.target.name]: "" });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Используем функцию валидации из библиотеки
+
     const validationErrors = validateContactForm(form);
-    
     if (validationErrors.length > 0) {
-      // Преобразуем массив ошибок в объект для отображения
       const newErrors = { ...initialErrors };
-      validationErrors.forEach((err: ValidationError) => {
+      validationErrors.forEach((err: any) => {
         newErrors[err.field as keyof typeof newErrors] = err.message;
       });
       setErrors(newErrors);
+      showToast('error', 'Пожалуйста, исправьте ошибки в форме');
       return;
     }
 
-    // Если валидация прошла успешно
     setIsLoading(true);
-    setFormStatus(null);
-    
     try {
       const response = await fetch('/api/contact', {
         method: 'POST',
@@ -57,187 +47,106 @@ const Contact = () => {
       const result = await response.json();
 
       if (response.ok && result.success) {
-        setFormStatus("success");
-        setStatusMessage(result.message || "Спасибо! Мы свяжемся с вами");
+        showToast('success', result.message || 'Спасибо! Мы свяжемся с вами');
         setForm(initialForm);
-
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        timeoutRef.current = setTimeout(() => {
-          setFormStatus(null);
-          setStatusMessage("");
-        }, 3000);
       } else {
-        let message = "";
-        if (result.errors && Array.isArray(result.errors) && result.errors.length > 0) {
-          const fieldsErrors = { ...initialErrors };
-          result.errors.forEach((err: { field: string, message: string }) => {
-            if (err.field && fieldsErrors.hasOwnProperty(err.field)) {
-              fieldsErrors[err.field as keyof typeof fieldsErrors] = err.message;
-            }
-          });
-          setErrors(fieldsErrors);
-          message = result.errors[0].message;
-        } else {
-          message = result.error || "Произошла ошибка отправки. Попробуйте позже.";
-        }
-        setFormStatus("error");
-        setStatusMessage(message);
-
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        timeoutRef.current = setTimeout(() => {
-          setFormStatus(null);
-          setStatusMessage("");
-        }, 3000);
+        showToast('error', result.error || 'Произошла ошибка отправки');
       }
-    } catch (err) {
-      setFormStatus("error");
-      setStatusMessage("Не удалось отправить форму, попробуйте позже.");
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(() => {
-        setFormStatus(null);
-        setStatusMessage("");
-      }, 3000);
+    } catch {
+      showToast('error', 'Не удалось отправить форму, попробуйте позже');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <section className="py-12 bg-gray-50">
-      <div className="container max-w-[520px] mx-auto px-4">
-        <h2 className="text-center text-4xl font-bold mb-9 tracking-tight">
-          Свяжитесь с нами
-        </h2>
-        
-        {/* Уведомление об успехе */}
-        {formStatus === "success" && (
-          <div className="bg-[#dafbe1] text-[#186540] rounded-xl py-3 px-5 mb-5 border border-[#b6e2c9] text-center font-medium">
-            {statusMessage}
-          </div>
-        )}
-        
-        {/* Уведомление об ошибке */}
-        {formStatus === "error" && (
-          <div className="bg-[#fde8e4] text-[#c43c2c] rounded-xl py-3 px-5 mb-5 border border-[#f5c3bb] text-center font-medium">
-            {statusMessage}
-          </div>
-        )}
-        
-        <form
-          onSubmit={handleSubmit}
-          noValidate
-          className="bg-white rounded-xl p-8 shadow-[0_2px_16px_0_rgba(70,90,120,0.10)] flex flex-col gap-6"
+    <section className="py-24 bg-[var(--muted)]" ref={ref} id="contact">
+      <div className="container max-w-3xl mx-auto px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6 }}
         >
-          {/* Поле Имя */}
-          <div className="flex flex-col">
-            <label htmlFor="contact-name" className="font-medium mb-1">
-              Имя<span className="text-red-500">*</span>
-            </label>
-            <input
-              id="contact-name"
-              name="name"
-              type="text"
-              value={form.name}
-              onChange={handleChange}
-              autoComplete="off"
-              disabled={isLoading}
-              className={`px-4 py-3 rounded-xl border ${
-                errors.name 
-                  ? "border-red-500 outline-red-500" 
-                  : "border-[#dde2eb]"
-              } text-base bg-[#fafbff] transition-colors disabled:opacity-60`}
-            />
-            {errors.name && (
-              <span className="text-red-500 text-sm mt-1">
-                {errors.name}
-              </span>
-            )}
-          </div>
+          <h2 className="text-4xl md:text-5xl font-serif font-semibold text-center mb-4 text-[var(--foreground)]">
+            Обсудим <span className="text-[var(--accent)]">проект?</span>
+          </h2>
+          <p className="text-center text-[var(--muted-foreground)] mb-12 max-w-2xl mx-auto">
+            Оставьте заявку, и мы свяжемся с вами в ближайшее время, чтобы обсудить детали
+          </p>
 
-          {/* Поле Email */}
-          <div className="flex flex-col">
-            <label htmlFor="contact-email" className="font-medium mb-1">
-              Email<span className="text-red-500">*</span>
-            </label>
-            <input
-              id="contact-email"
-              name="email"
-              type="email"
-              value={form.email}
-              onChange={handleChange}
-              autoComplete="off"
-              disabled={isLoading}
-              className={`px-4 py-3 rounded-xl border ${
-                errors.email 
-                  ? "border-red-500 outline-red-500" 
-                  : "border-[#dde2eb]"
-              } text-base bg-[#fafbff] transition-colors disabled:opacity-60`}
-            />
-            {errors.email && (
-              <span className="text-red-500 text-sm mt-1">
-                {errors.email}
-              </span>
-            )}
-          </div>
-
-          {/* Поле Сообщение */}
-          <div className="flex flex-col">
-            <label htmlFor="contact-message" className="font-medium mb-1">
-              Сообщение<span className="text-red-500">*</span>
-            </label>
-            <textarea
-              id="contact-message"
-              name="message"
-              value={form.message}
-              onChange={handleChange}
-              rows={5}
-              disabled={isLoading}
-              className={`px-4 py-3 rounded-xl border ${
-                errors.message 
-                  ? "border-red-500 outline-red-500" 
-                  : "border-[#dde2eb]"
-              } text-base bg-[#fafbff] transition-colors resize-y min-h-[110px] disabled:opacity-60`}
-            />
-            {errors.message && (
-              <span className="text-red-500 text-sm mt-1">
-                {errors.message}
-              </span>
-            )}
-          </div>
-
-          {/* Кнопка отправки */}
-          <button
-            type="submit"
-            disabled={isLoading}
-            className={`mt-1 py-3 px-0 rounded-xl text-white font-semibold text-lg border-none shadow-[0_1px_6px_rgba(70,90,120,0.08)] transition-colors flex items-center justify-center gap-3 ${
-              isLoading 
-                ? "bg-[#6278fa] cursor-not-allowed" 
-                : "bg-[#3748fa] hover:bg-[#4a5bfa] cursor-pointer"
-            }`}
+          <form
+            onSubmit={handleSubmit}
+            noValidate
+            className="bg-[var(--background)] rounded-3xl p-8 md:p-10 shadow-[var(--shadow-md)] space-y-6 border border-[var(--border)]"
           >
-            {isLoading && (
-              <span
-                className="inline-block w-5 h-5 border-2 border-gray-100 border-t-white rounded-full animate-spin"
-                aria-hidden="true"
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-[var(--foreground)] mb-2">
+                Имя <span className="text-[var(--accent)]">*</span>
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={form.name}
+                onChange={handleChange}
+                disabled={isLoading}
+                className={`w-full px-5 py-3 rounded-xl border ${
+                  errors.name ? 'border-red-500' : 'border-[var(--border)]'
+                } bg-[var(--background)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] outline-none transition disabled:opacity-60`}
+                placeholder="Александр"
               />
-            )}
-            {isLoading ? "Отправка..." : "Отправить"}
-          </button>
-        </form>
+              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-[var(--foreground)] mb-2">
+                Email <span className="text-[var(--accent)]">*</span>
+              </label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+                disabled={isLoading}
+                className={`w-full px-5 py-3 rounded-xl border ${
+                  errors.email ? 'border-red-500' : 'border-[var(--border)]'
+                } bg-[var(--background)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] outline-none transition disabled:opacity-60`}
+                placeholder="hello@example.com"
+              />
+              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="message" className="block text-sm font-medium text-[var(--foreground)] mb-2">
+                Сообщение <span className="text-[var(--accent)]">*</span>
+              </label>
+              <textarea
+                id="message"
+                name="message"
+                rows={5}
+                value={form.message}
+                onChange={handleChange}
+                disabled={isLoading}
+                className={`w-full px-5 py-3 rounded-xl border ${
+                  errors.message ? 'border-red-500' : 'border-[var(--border)]'
+                } bg-[var(--background)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] outline-none transition resize-none disabled:opacity-60`}
+                placeholder="Расскажите о вашей идее..."
+              />
+              {errors.message && <p className="text-red-500 text-sm mt-1">{errors.message}</p>}
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-[var(--accent)] text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed hover:bg-[var(--accent-light)] hover:shadow-lg transform hover:-translate-y-0.5 text-lg"
+            >
+              {isLoading && <LoadingIcon className="w-5 h-5 animate-spin text-white" />}
+              {isLoading ? 'Отправка...' : 'Отправить заявку'}
+            </button>
+          </form>
+        </motion.div>
       </div>
-      
-      {/* Дополнительные стили для анимации спиннера */}
-      <style>
-        {`
-          @keyframes spin {
-            0% { transform: rotate(0deg);}
-            100% { transform: rotate(360deg);}
-          }
-          .animate-spin {
-            animation: spin 0.9s linear infinite;
-          }
-        `}
-      </style>
     </section>
   );
 };

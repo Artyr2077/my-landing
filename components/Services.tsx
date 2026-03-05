@@ -1,197 +1,91 @@
 'use client';
 
 import React from "react";
-import { motion } from "framer-motion";
+import { motion, Variants } from "framer-motion";
 import { useInView } from "react-intersection-observer";
+import { WebsiteIcon, BotIcon, AppIcon } from "./ui/Icons";
 
 const services = [
   {
-    icon: "🌐",
-    title: "Сайты",
-    description: "Разработка корпоративных сайтов и лендингов",
+    icon: WebsiteIcon,
+    title: "Корпоративные сайты",
+    description: "Разработка многостраничных сайтов и премиальных лендингов, которые отражают ценности вашего бренда.",
   },
   {
-    icon: "🤖",
-    title: "Боты",
-    description: "Создание Telegram-ботов для автоматизации",
+    icon: BotIcon,
+    title: "Telegram-боты",
+    description: "Создание умных ботов для автоматизации продаж, поддержки и сбора лидов 24/7.",
   },
   {
-    icon: "📱",
+    icon: AppIcon,
     title: "Веб-приложения",
-    description: "Сложные веб-сервисы и CRM-системы",
+    description: "Сложные веб-сервисы, CRM-системы и личные кабинеты с безупречным UX.",
   },
 ];
 
-const isMobile = () =>
-  typeof window !== "undefined" && window.innerWidth <= 700;
-
 const Services = () => {
-  // Анимация появления карточки при скролле
-  // Массив refs и inView для каждой карточки
-  const cardRefs: React.MutableRefObject<(HTMLElement | null)[]> = React.useRef([] as (HTMLElement | null)[]);
+  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
 
-  // Для эффектов наведения
-  const handleMouseEnter = (idx: number) => {
-    if (typeof window !== "undefined" && isMobile()) return;
-    const card = cardRefs.current[idx] as HTMLDivElement | null;
-    const icon = card?.querySelector(".service-icon") as HTMLDivElement | null;
-    if (card) {
-      card.style.transform = "translateY(-8px)";
-      card.style.boxShadow = "0 14px 32px 0 rgba(60,60,120,0.20)";
-    }
-    if (icon) {
-      icon.style.transform = "scale(1.1)";
-    }
+  const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.15,
+      },
+    },
   };
 
-  const handleMouseLeave = (idx: number) => {
-    if (typeof window !== "undefined" && isMobile()) return;
-    const card = cardRefs.current[idx] as HTMLDivElement | null;
-    const icon = card?.querySelector(".service-icon") as HTMLDivElement | null;
-    if (card) {
-      card.style.transform = "";
-      card.style.boxShadow = "";
-    }
-    if (icon) {
-      icon.style.transform = "";
-    }
+  const itemVariants: Variants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { 
+        duration: 0.6,
+        ease: "easeOut"
+      }
+    },
   };
 
   return (
-    <section
-      className="services-section"
-      style={{ padding: "3rem 0", background: "#f8f9fa" }}
-    >
-      <div
-        className="container"
-        style={{ maxWidth: 1200, margin: "0 auto", padding: "0 1rem" }}
-      >
-        <h2
-          style={{
-            textAlign: "center",
-            fontSize: "2.25rem",
-            marginBottom: "2.5rem",
-            fontWeight: 700,
-            letterSpacing: "-1px",
-          }}
+    <section className="py-24 bg-[var(--muted)]" ref={ref}>
+      <div className="container max-w-7xl mx-auto px-4">
+        <motion.h2
+          initial={{ opacity: 0, y: -20 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.5 }}
+          className="text-4xl md:text-5xl font-serif font-semibold text-center mb-16 text-[var(--foreground)]"
         >
-          Наши услуги
-        </h2>
-        <div
-          className="services-grid"
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: "2rem",
-          }}
+          Наши <span className="text-[var(--accent)]">компетенции</span>
+        </motion.h2>
+
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate={inView ? "visible" : "hidden"}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
         >
-          {services.map((service, idx) => {
-            const { ref, inView } = useInView({
-              triggerOnce: true,
-              threshold: 0.2,
-            });
-            // Комбинируем внутренний ref библиотеки с массивом refs для наведения
-            const setRefs = (el: HTMLElement | null) => {
-              cardRefs.current[idx] = el;
-              ref(el);
-            };
+          {services.map((service, index) => {
+            const IconComponent = service.icon;
             return (
               <motion.div
-                key={idx}
-                className="service-card"
-                ref={setRefs}
-                initial={{ opacity: 0, y: 34 }}
-                animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 34 }}
-                transition={{ duration: 0.5, ease: [.4, 0, .2, 1], delay: idx * 0.10 }}
-                style={{
-                  background: "#fff",
-                  borderRadius: "1.25rem",
-                  boxShadow: "0 2px 16px 0 rgba(70, 90, 120, .10)",
-                  padding: "2.5rem 2rem",
-                  textAlign: "center",
-                  transition:
-                    "transform 0.23s cubic-bezier(.4,0,.2,1), box-shadow 0.23s cubic-bezier(.4,0,.2,1)",
-                  cursor: "pointer",
-                  willChange: "transform, box-shadow",
-                }}
-                onMouseEnter={() => handleMouseEnter(idx)}
-                onMouseLeave={() => handleMouseLeave(idx)}
+                key={index}
+                variants={itemVariants}
+                className="group bg-[var(--background)] rounded-2xl p-8 shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] transition-all duration-500 hover:-translate-y-2"
               >
-                <div
-                  className="service-icon"
-                  style={{
-                    fontSize: "2.5rem",
-                    marginBottom: "1rem",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderRadius: "50%",
-                    width: "3.5rem",
-                    height: "3.5rem",
-                    background: "#f0f2fa",
-                    margin: "0 auto 1rem",
-                    transition:
-                      "transform 0.19s cubic-bezier(.4,0,.2,1) /* иконка плавно увеличивается */",
-                    willChange: "transform",
-                  }}
-                >
-                  {service.icon}
+                <div className="w-14 h-14 mb-6 rounded-xl bg-[var(--accent)]/10 flex items-center justify-center group-hover:bg-[var(--accent)] transition-all duration-300">
+                  <IconComponent className="w-7 h-7 text-[var(--accent)] group-hover:text-white transition-colors duration-300" />
                 </div>
-                <h3
-                  style={{
-                    fontSize: "1.25rem",
-                    fontWeight: 600,
-                    marginBottom: "0.75rem",
-                  }}
-                >
-                  {service.title}
-                </h3>
-                <p
-                  style={{
-                    fontSize: "1rem",
-                    color: "#444e62",
-                    lineHeight: 1.6,
-                  }}
-                >
+                <h3 className="text-2xl font-serif font-semibold mb-3 text-[var(--foreground)]">{service.title}</h3>
+                <p className="text-[var(--muted-foreground)] leading-relaxed">
                   {service.description}
                 </p>
               </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       </div>
-      <style>
-        {`
-        @media (max-width: 900px) {
-          .services-grid {
-            grid-template-columns: 1fr 1fr !important;
-          }
-        }
-        @media (max-width: 600px) {
-          .services-grid {
-            grid-template-columns: 1fr !important;
-          }
-        }
-        /* Smoother big effects only на десктопе, на мобилке - проще */
-        @media (hover: hover) and (pointer: fine) {
-          .service-card:hover {
-            /* JS-дублирование, для SSR -- вторично */
-            /* Дополнительно для плавности: */
-            /* transform: translateY(-8px); */
-            /* box-shadow: 0 14px 32px 0 rgba(60,60,120,0.20); */
-          }
-          .service-card:hover .service-icon {
-            /* transform: scale(1.1); */
-          }
-        }
-        @media (max-width: 700px) {
-          .service-card,
-          .service-icon {
-            transition: transform 0.12s cubic-bezier(.4,0,.2,1), box-shadow 0.12s cubic-bezier(.4,0,.2,1);
-          }
-        }
-        `}
-      </style>
     </section>
   );
 };
