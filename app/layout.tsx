@@ -5,6 +5,7 @@ import "./globals.css";
 import { ToastProvider } from "@/components/ToastContext";
 import Loader from "@/components/Loader";
 import { ThemeProvider } from "@/context/ThemeContext";
+import Header from "@/components/Header";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -32,13 +33,21 @@ export default function RootLayout({
     return () => clearTimeout(timer);
   }, [pathname]);
 
+  // Проверяем, находится ли пользователь в админке
+  const isAdminPage = pathname?.startsWith('/admin');
+
   return (
     <html lang="ru" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ThemeProvider>
           <ToastProvider>
             {loading && <Loader />}
-            {children}
+            {/* Показываем Header на всех страницах, кроме админки */}
+            {!isAdminPage && <Header />}
+            {/* Основной контент */}
+            <main className={!isAdminPage ? "" : ""}>
+              {children}
+            </main>
           </ToastProvider>
         </ThemeProvider>
       </body>

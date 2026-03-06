@@ -25,7 +25,7 @@ const posts = [
 
 export default function BlogPage() {
   return (
-    <main className="min-h-screen pt-24">
+    <div className="min-h-screen bg-[var(--background)]">
       <div className="container max-w-7xl mx-auto px-4 py-16">
         <AnimatedSection>
           <h1 className="text-5xl md:text-6xl font-serif font-semibold mb-6 text-center text-[var(--foreground)]">
@@ -60,6 +60,6 @@ export default function BlogPage() {
           ))}
         </div>
       </div>
-    </main>
+    </div>
   );
 }

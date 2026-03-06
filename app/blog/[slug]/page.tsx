@@ -47,17 +47,16 @@ const posts = [
 ];
 
 export default async function BlogPost({ params }: { params: Promise<{ slug: string }> }) {
-    // Ждем, пока params "распакуется"
-    const { slug } = await params;
-    const post = posts.find(p => p.slug === slug);
-  
-    if (!post) {
-      notFound();
-    }
+  const { slug } = await params;
+  const post = posts.find(p => p.slug === slug);
+
+  if (!post) {
+    notFound();
+  }
 
   return (
-    <main className="min-h-screen pt-24 pb-16">
-      <div className="container max-w-4xl mx-auto px-4">
+    <div className="min-h-screen bg-[var(--background)]">
+      <div className="container max-w-4xl mx-auto px-4 py-16">
         {/* Кнопка назад */}
         <Link 
           href="/blog" 
@@ -99,6 +98,6 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
       </div>
-    </main>
+    </div>
   );
 }
