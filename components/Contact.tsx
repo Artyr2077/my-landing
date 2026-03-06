@@ -1,31 +1,21 @@
-import React, { useState, useRef } from "react";
+'use client';
 
-const initialForm = {
-  name: "",
-  email: "",
-  message: "",
-};
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { useInView } from "react-intersection-observer";
+import { useToast } from "./ToastContext";
+import { LoadingIcon } from "./ui/Icons";
+import { validateContactForm } from "@/lib/validation";
 
-const initialErrors = {
-  name: "",
-  email: "",
-  message: "",
-};
-
-function validateEmail(email: string) {
-  // Simple email regex
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
+const initialForm = { name: "", email: "", message: "" };
+const initialErrors = { name: "", email: "", message: "" };
 
 const Contact = () => {
   const [form, setForm] = useState(initialForm);
   const [errors, setErrors] = useState(initialErrors);
-
-  // Новые состояния
   const [isLoading, setIsLoading] = useState(false);
-  const [formStatus, setFormStatus] = useState<null | "success" | "error">(null);
-  const [statusMessage, setStatusMessage] = useState<string>("");
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { showToast } = useToast();
+  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -34,291 +24,129 @@ const Contact = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    let valid = true;
-    let newErrors = { ...initialErrors };
 
-    if (!form.name.trim()) {
-      newErrors.name = "Пожалуйста, введите имя";
-      valid = false;
+    const validationErrors = validateContactForm(form);
+    if (validationErrors.length > 0) {
+      const newErrors = { ...initialErrors };
+      validationErrors.forEach((err: any) => {
+        newErrors[err.field as keyof typeof newErrors] = err.message;
+      });
+      setErrors(newErrors);
+      showToast('error', 'Пожалуйста, исправьте ошибки в форме');
+      return;
     }
 
-    if (!form.email.trim()) {
-      newErrors.email = "Пожалуйста, введите email";
-      valid = false;
-    } else if (!validateEmail(form.email.trim())) {
-      newErrors.email = "Введите корректный email";
-      valid = false;
-    }
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form)
+      });
 
-    if (!form.message.trim()) {
-      newErrors.message = "Пожалуйста, напишите сообщение";
-      valid = false;
-    }
+      const result = await response.json();
 
-    setErrors(newErrors);
-
-    if (valid) {
-      setIsLoading(true);
-      setFormStatus(null); // clear any previous status
-      try {
-        const response = await fetch('/api/contact', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(form)
-        });
-
-        const result = await response.json();
-
-        if (response.ok && result.success) {
-          setFormStatus("success");
-          setStatusMessage(result.message || "Спасибо! Мы свяжемся с вами");
-          setForm(initialForm);
-
-          // очистить статус через 3 сек
-          if (timeoutRef.current) clearTimeout(timeoutRef.current);
-          timeoutRef.current = setTimeout(() => {
-            setFormStatus(null);
-            setStatusMessage("");
-          }, 3000);
-        } else {
-          let message = "";
-          if (result.errors && Array.isArray(result.errors) && result.errors.length > 0) {
-            // Показываем только первую ошибку для простоты
-            const fieldsErrors = { ...initialErrors };
-            result.errors.forEach((err: { field: string, message: string }) => {
-              if (err.field && fieldsErrors.hasOwnProperty(err.field)) {
-                fieldsErrors[err.field as keyof typeof fieldsErrors] = err.message;
-              }
-            });
-            setErrors(fieldsErrors);
-            message = result.errors[0].message;
-          } else {
-            message = result.error || "Произошла ошибка отправки. Попробуйте позже.";
-          }
-          setFormStatus("error");
-          setStatusMessage(message);
-
-          // Убираем ошибку через 3 сек (можно оставить дольше)
-          if (timeoutRef.current) clearTimeout(timeoutRef.current);
-          timeoutRef.current = setTimeout(() => {
-            setFormStatus(null);
-            setStatusMessage("");
-          }, 3000);
-        }
-      } catch (err) {
-        setFormStatus("error");
-        setStatusMessage("Не удалось отправить форму, попробуйте позже.");
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        timeoutRef.current = setTimeout(() => {
-          setFormStatus(null);
-          setStatusMessage("");
-        }, 3000);
-      } finally {
-        setIsLoading(false);
+      if (response.ok && result.success) {
+        showToast('success', result.message || 'Спасибо! Мы свяжемся с вами');
+        setForm(initialForm);
+      } else {
+        showToast('error', result.error || 'Произошла ошибка отправки');
       }
+    } catch {
+      showToast('error', 'Не удалось отправить форму, попробуйте позже');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <section className="contact-section" style={{ padding: "3rem 0", background: "#f0f2fa" }}>
-      <div className="container" style={{ maxWidth: 520, margin: "0 auto", padding: "0 1rem" }}>
-        <h2
-          style={{
-            textAlign: "center",
-            fontSize: "2.25rem",
-            fontWeight: 700,
-            marginBottom: "2.25rem",
-            letterSpacing: "-1px",
-          }}
+    <section className="py-24 bg-[var(--muted)]" ref={ref} id="contact">
+      <div className="container max-w-3xl mx-auto px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6 }}
         >
-          Свяжитесь с нами
-        </h2>
-        {/* Уведомление об успехе/ошибке */}
-        {formStatus === "success" && (
-          <div
-            style={{
-              background: "#dafbe1",
-              color: "#186540",
-              borderRadius: ".75rem",
-              padding: ".85rem 1.2rem",
-              marginBottom: "1.25rem",
-              border: "1px solid #b6e2c9",
-              textAlign: "center",
-              fontWeight: 500,
-            }}
+          <h2 className="text-4xl md:text-5xl font-serif font-semibold text-center mb-4 text-[var(--foreground)]">
+            Обсудим <span className="text-[var(--accent)]">проект?</span>
+          </h2>
+          <p className="text-center text-[var(--muted-foreground)] mb-12 max-w-2xl mx-auto">
+            Оставьте заявку, и мы свяжемся с вами в ближайшее время, чтобы обсудить детали
+          </p>
+
+          <form
+            onSubmit={handleSubmit}
+            noValidate
+            className="bg-[var(--background)] rounded-3xl p-8 md:p-10 shadow-[var(--shadow-md)] space-y-6 border border-[var(--border)]"
           >
-            {statusMessage}
-          </div>
-        )}
-        {formStatus === "error" && (
-          <div
-            style={{
-              background: "#fde8e4",
-              color: "#c43c2c",
-              borderRadius: ".75rem",
-              padding: ".85rem 1.2rem",
-              marginBottom: "1.25rem",
-              border: "1px solid #f5c3bb",
-              textAlign: "center",
-              fontWeight: 500,
-            }}
-          >
-            {statusMessage}
-          </div>
-        )}
-        <form
-          onSubmit={handleSubmit}
-          noValidate
-          style={{
-            background: "#fff",
-            borderRadius: "1.25rem",
-            padding: "2rem",
-            boxShadow: "0 2px 16px 0 rgba(70, 90, 120, .10)",
-            display: "flex",
-            flexDirection: "column",
-            gap: "1.5rem",
-          }}
-        >
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <label htmlFor="contact-name" style={{ fontWeight: 500, marginBottom: ".25rem" }}>
-              Имя<span style={{ color: "#e74c3c" }}>*</span>
-            </label>
-            <input
-              id="contact-name"
-              name="name"
-              type="text"
-              value={form.name}
-              onChange={handleChange}
-              autoComplete="off"
-              style={{
-                padding: ".75rem 1rem",
-                borderRadius: ".75rem",
-                border: errors.name ? "1.5px solid #e74c3c" : "1.5px solid #dde2eb",
-                fontSize: "1rem",
-                outline: errors.name ? "#e74c3c auto 1px" : undefined,
-                background: "#fafbff",
-                transition: "border-color .2s"
-              }}
-              disabled={isLoading}
-            />
-            {errors.name && (
-              <span style={{ color: "#e74c3c", fontSize: ".92rem", marginTop: ".25rem" }}>
-                {errors.name}
-              </span>
-            )}
-          </div>
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <label htmlFor="contact-email" style={{ fontWeight: 500, marginBottom: ".25rem" }}>
-              Email<span style={{ color: "#e74c3c" }}>*</span>
-            </label>
-            <input
-              id="contact-email"
-              name="email"
-              type="email"
-              value={form.email}
-              onChange={handleChange}
-              autoComplete="off"
-              style={{
-                padding: ".75rem 1rem",
-                borderRadius: ".75rem",
-                border: errors.email ? "1.5px solid #e74c3c" : "1.5px solid #dde2eb",
-                fontSize: "1rem",
-                outline: errors.email ? "#e74c3c auto 1px" : undefined,
-                background: "#fafbff",
-                transition: "border-color .2s"
-              }}
-              disabled={isLoading}
-            />
-            {errors.email && (
-              <span style={{ color: "#e74c3c", fontSize: ".92rem", marginTop: ".25rem" }}>
-                {errors.email}
-              </span>
-            )}
-          </div>
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <label htmlFor="contact-message" style={{ fontWeight: 500, marginBottom: ".25rem" }}>
-              Сообщение<span style={{ color: "#e74c3c" }}>*</span>
-            </label>
-            <textarea
-              id="contact-message"
-              name="message"
-              value={form.message}
-              onChange={handleChange}
-              rows={5}
-              style={{
-                padding: ".9rem 1rem",
-                borderRadius: ".75rem",
-                border: errors.message ? "1.5px solid #e74c3c" : "1.5px solid #dde2eb",
-                fontSize: "1rem",
-                background: "#fafbff",
-                outline: errors.message ? "#e74c3c auto 1px" : undefined,
-                resize: "vertical",
-                minHeight: "110px",
-                transition: "border-color .2s"
-              }}
-              disabled={isLoading}
-            />
-            {errors.message && (
-              <span style={{ color: "#e74c3c", fontSize: ".92rem", marginTop: ".25rem" }}>
-                {errors.message}
-              </span>
-            )}
-          </div>
-          <button
-            type="submit"
-            disabled={isLoading}
-            style={{
-              marginTop: ".25rem",
-              padding: "0.9rem 0",
-              borderRadius: ".75rem",
-              color: "#fff",
-              background: isLoading ? "#6278fa" : "#3748fa",
-              fontWeight: 600,
-              fontSize: "1.17rem",
-              border: "none",
-              cursor: isLoading ? "not-allowed" : "pointer",
-              boxShadow: "0 1px 6px rgba(70, 90, 120, .08)",
-              transition: "background .2s",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: ".7rem"
-            }}
-          >
-            {isLoading && (
-              <span
-                className="spinner"
-                style={{
-                  width: "1.2em",
-                  height: "1.2em",
-                  border: "2px solid #f3f3f3",
-                  borderTop: "2px solid #fff",
-                  borderRadius: "50%",
-                  display: "inline-block",
-                  animation: "spin 0.9s linear infinite"
-                }}
-                aria-hidden="true"
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-[var(--foreground)] mb-2">
+                Имя <span className="text-[var(--accent)]">*</span>
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={form.name}
+                onChange={handleChange}
+                disabled={isLoading}
+                className={`w-full px-5 py-3 rounded-xl border ${
+                  errors.name ? 'border-red-500' : 'border-[var(--border)]'
+                } bg-[var(--background)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] outline-none transition disabled:opacity-60`}
+                placeholder="Александр"
               />
-            )}
-            {isLoading ? "Отправка..." : "Отправить"}
-          </button>
-        </form>
+              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-[var(--foreground)] mb-2">
+                Email <span className="text-[var(--accent)]">*</span>
+              </label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+                disabled={isLoading}
+                className={`w-full px-5 py-3 rounded-xl border ${
+                  errors.email ? 'border-red-500' : 'border-[var(--border)]'
+                } bg-[var(--background)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] outline-none transition disabled:opacity-60`}
+                placeholder="hello@example.com"
+              />
+              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="message" className="block text-sm font-medium text-[var(--foreground)] mb-2">
+                Сообщение <span className="text-[var(--accent)]">*</span>
+              </label>
+              <textarea
+                id="message"
+                name="message"
+                rows={5}
+                value={form.message}
+                onChange={handleChange}
+                disabled={isLoading}
+                className={`w-full px-5 py-3 rounded-xl border ${
+                  errors.message ? 'border-red-500' : 'border-[var(--border)]'
+                } bg-[var(--background)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] outline-none transition resize-none disabled:opacity-60`}
+                placeholder="Расскажите о вашей идее..."
+              />
+              {errors.message && <p className="text-red-500 text-sm mt-1">{errors.message}</p>}
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-[var(--accent)] text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed hover:bg-[var(--accent-light)] hover:shadow-lg transform hover:-translate-y-0.5 text-lg"
+            >
+              {isLoading && <LoadingIcon className="w-5 h-5 animate-spin text-white" />}
+              {isLoading ? 'Отправка...' : 'Отправить заявку'}
+            </button>
+          </form>
+        </motion.div>
       </div>
-      <style>
-        {`
-          @media (max-width: 600px) {
-            .contact-section form {
-              padding: 1rem !important;
-            }
-          }
-          @keyframes spin {
-            0% { transform: rotate(0deg);}
-            100% { transform: rotate(360deg);}
-          }
-        `}
-      </style>
     </section>
   );
 };

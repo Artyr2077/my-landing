@@ -1,44 +1,96 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  console.log("=== PATCH REQUEST STARTED ===");
+  
   try {
-    // Проверка авторизации (cookie admin-auth)
-    // Fastest way: Parse cookie header directly, since Next.js API route context may not provide cookies API
+    // В Next.js 15 params нужно развернуть через await
+    const { id } = await params;
+    console.log("ID from params after await:", id, "Type:", typeof id);
+
+    if (!id) {
+      console.log("ID is missing");
+      return NextResponse.json({ 
+        success: false, 
+        error: "ID is required" 
+      }, { status: 400 });
+    }
+
+    // Проверка авторизации
     const cookieHeader = request.headers.get("cookie") || "";
+    console.log("Cookie header:", cookieHeader);
+    
     const isAuthed = cookieHeader.split(";").some(c => {
       const [name, value] = c.trim().split("=");
       return name === "admin-auth" && value === "true";
     });
+    
     if (!isAuthed) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+      console.log("Unauthorized");
+      return NextResponse.json({ 
+        success: false, 
+        error: "Unauthorized" 
+      }, { status: 401 });
     }
 
-    const id = params.id;
-    if (!id) {
-      return NextResponse.json({ success: false, error: "id is required" }, { status: 400 });
+    // Получаем тело запроса
+    const body = await request.json();
+    console.log("Request body:", body);
+    
+    const { status } = body;
+
+    if (!status) {
+      console.log("Status is missing");
+      return NextResponse.json({ 
+        success: false, 
+        error: "Status is required" 
+      }, { status: 400 });
     }
 
-    const { status } = await request.json();
+    // Конвертируем ID в число (для Supabase)
+    const numericId = parseInt(id, 10);
+    console.log("Numeric ID for Supabase:", numericId);
 
-    const allowedStatuses = ["new", "read", "contacted"];
-    if (!allowedStatuses.includes(status)) {
-      return NextResponse.json({ success: false, error: "Invalid status" }, { status: 400 });
+    if (isNaN(numericId)) {
+      console.log("Invalid ID format");
+      return NextResponse.json({ 
+        success: false, 
+        error: "Invalid ID format" 
+      }, { status: 400 });
     }
 
+    console.log("Updating lead in Supabase...");
     const { data, error } = await supabase
       .from("leads")
       .update({ status })
-      .eq("id", id)
-      .select()
-      .single();
+      .eq("id", numericId)
+      .select();
 
     if (error) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+      console.error("Supabase error:", error);
+      return NextResponse.json({ 
+        success: false, 
+        error: error.message 
+      }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, data });
+    console.log("Update successful:", data);
+    return NextResponse.json({ 
+      success: true, 
+      data 
+    });
+    
   } catch (e: any) {
-    return NextResponse.json({ success: false, error: e.message || "Server error" }, { status: 500 });
+    console.error("Server error:", e);
+    return NextResponse.json({ 
+      success: false, 
+      error: e.message || "Internal server error" 
+    }, { status: 500 });
+  } finally {
+    console.log("=== PATCH REQUEST ENDED ===");
   }
 }
